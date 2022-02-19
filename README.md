@@ -13,3 +13,12 @@ You will have to take all the possible coins in case you escape alive and you wi
 - Left/Right - Move the player
 - X - Accept/Jump
 - F4 - Full screen/Window mode
+
+## Troubleshooting
+Is there a problem?
+Contact me if there is a problem or doubt.
+I appreciate the bug reports and comments.
+
+
+Greetings and thank you ;-)
+Bye!!!
