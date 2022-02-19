@@ -15,7 +15,8 @@ You will have to take all the possible coins in case you escape alive and you wi
 - F4 - Full screen/Window mode
 
 ## Troubleshooting
-Is there a problem? Contact me if there is a problem or doubt.
+Is there a problem?</br>
+Contact me if there is a problem or doubt.</br>
 I appreciate the bug reports and comments.
 
 
