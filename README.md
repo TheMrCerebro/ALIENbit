@@ -16,9 +16,12 @@ You will have to take all the possible coins in case you escape alive and you wi
 
 ## Troubleshooting
 Is there a problem?
+
 Contact me if there is a problem or doubt.
+
 I appreciate the bug reports and comments.
 
 
 Greetings and thank you ;-)
+
 Bye!!!
