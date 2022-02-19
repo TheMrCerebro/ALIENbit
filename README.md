@@ -10,8 +10,6 @@ You will have to take all the possible coins in case you escape alive and you wi
 <img src="https://user-images.githubusercontent.com/99989085/154798886-535c5990-45c4-4864-acac-2d994c2c4ea6.png" width="256" height="256" />     <img src="https://user-images.githubusercontent.com/99989085/154798887-05d5999f-f815-49bf-b597-b8c38322422b.png" width="256" height="256" />     <img src="https://user-images.githubusercontent.com/99989085/154798888-25063ee5-1bc3-4149-aadb-978ff85f78f0.png" width="256" height="256" />
 
 ## Controls
-'''
-Left/Right - Move the player
-X - Accept/Jump
-F4 - Full screen/Window mode
-'''
+- Left/Right - Move the player
+- X - Accept/Jump
+- F4 - Full screen/Window mode
