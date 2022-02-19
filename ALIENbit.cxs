@@ -1,0 +1,609 @@
+'*********************************************************************
+'
+' Copyright (c) 2021-2022 TheMrCerebro
+'
+' ALIENbit - Zlib license.
+'
+' This software is provided 'as-is', without any express or
+' implied warranty. In no event will the authors be held
+' liable for any damages arising from the use of this software.
+'
+' Permission is granted to anyone to use this software for any purpose,
+' including commercial applications, and to alter it and redistribute
+' it freely, subject to the following restrictions:
+'
+' 1. The origin of this software must not be misrepresented;
+' you must not claim that you wrote the original software.
+' If you use this software in a product, an acknowledgment
+' in the product documentation would be appreciated but
+' is not required.
+'
+' 2. Altered source versions must be plainly marked as such,
+' and must not be misrepresented as being the original software.
+'
+' 3. This notice may not be removed or altered from any
+' source distribution.
+'
+'*********************************************************************
+
+#GLFW_WINDOW_TITLE="ALIENbit - by TheMrCerebro"
+#GLFW_WINDOW_WIDTH=512
+#GLFW_WINDOW_HEIGHT=512
+#MOJO_IMAGE_FILTERING_ENABLED=False
+
+Import mojo
+
+Import inc.coldet
+Import inc.xml
+Import inc.fonts
+Import inc.hscore
+Import inc.particles
+Import inc.animated
+Import inc.shapes
+
+Function Main()
+	New Game()
+End
+
+'Clase
+Class ITEM
+	Field x:float, y:float
+	Field v:float, m:float
+	Field t:int
+End
+
+Class BULLET
+	Field x:float, y:float, d:int
+end
+
+Class Game Extends App
+
+	'Constructor
+	Method OnCreate()
+
+		SetUpdateRate(30)
+		Seed = Millisecs()
+
+		LoadFont("terminal.fnt")
+	
+		'Carga las imagenes
+		imgPlayer	  = LoadImage("player.png",16)
+		imgItems	  = LoadImage("items.png",14)
+		imgWater 	  = LoadImage("water.png",8,12,5)
+		imgBridge     = LoadImage("bridge.png",8,3,6)
+		imgBackground = LoadImage("background.png")
+		imgBoss		  = LoadImage("boss.png",4)
+		imgFlash 	  = LoadImage("flash.png",4)
+		imgSplash 	  = LoadImage("splash.png",4)
+		imgMake		  = LoadImage("make.png",4)
+		imgTitle	  = LoadImage("title.png")
+		imgTube		  = LoadImage("tube.png",8,16,4)
+		imgScore	  = LoadImage("score.png")
+		imgPick		  = LoadImage("pick.png",4)
+		imgHologram   = LoadImage("hologram.png",6)
+		imgTurret	  = LoadImage("turret.png",4)
+		
+		'Carga los sonidos
+		sndSelect = LoadSound("select.wav")
+		sndMoney  = LoadSound("money.wav")
+		sndLost   = LoadSound("lost.wav")
+		sndShoot  = LoadSound("shoot.wav")
+		sndLaught = LoadSound("laught.wav")
+		sndJump   = LoadSound("jump.wav")
+		sndDown	  = LoadSound("down.wav")
+		sndDie	  = LoadSound("die.wav")
+		sndBad    = LoadSound("bad.wav")
+
+		'Carga la musica
+		PlayMusic("theme.ogg")
+		
+		'Crea una lista de puntuaciones ficticia
+		AddScore(81, "TMC")
+		AddScore(62, "JDP")
+		AddScore(38, "DPS")
+		AddScore(26, "HDF")
+		AddScore(10, "SMB")
+
+	End
+
+	Method OnUpdate()
+
+		If fader=0
+		
+			Select state
+			
+			Case MENU
+				
+				If Int(0.01*Millisecs() Mod 10)=Int(Rnd(0,8))
+					Local itm:ITEM=New ITEM
+					itm.x = Int(Rnd(1,7))*8
+					itm.y = -8
+					itm.t = Rnd(0,7)
+					itmA.AddLast(itm)
+				Endif
+				
+				For Local itm:=Eachin itmA
+						
+					AddEmitter(itm.x+4+Rnd(-1,1),itm.y+4+Rnd(-1,1),0,0,0,0,192,1,0.075)
+					
+					If itm.y<64
+						itm.v += 0.05
+						itm.y += itm.v
+					Else
+						itmA.RemoveEach(itm)
+					endif		
+				Next
+				
+				If KeyHit(KEY_X)
+					For Local i:int=0 Until 2
+						tx[i] = 2+(i*52)
+						ty[i] = 3
+						ts[i] = 0
+					next
+					fader = 1
+					laught = 0
+					tt = 0
+					px = 28
+					py = 48
+					ps = 0
+					pa = 0
+					seq = 0
+					pj = False
+					score = 0
+					limit = 0
+					level = 0
+					itmA.Clear()
+					bllA.Clear()
+					PlaySound(sndSelect)
+					state=INGAME
+				Endif
+				
+			Case INGAME
+				
+			'Controles para el jugador
+
+				If seq>0
+				
+					If limit=3 And level<4 Then px=28
+
+					If seq>30*1 And seq<30*3
+						ps += 1
+						If ps<8 Or ps>15 Then ps=8
+						py=48
+					Else
+						ps=8
+						py += 1
+					Endif
+
+					If seq=25 Then laught=30
+					
+					If seq=30 Then PlaySound(sndDown,7)
+					
+					If laught>0
+						If laught=10 Then PlaySound(sndLaught,4)
+						If laught=20 Then PlaySound(sndLaught,4)
+						If laught=30 Then PlaySound(sndLaught,4)
+						laught -= 1
+					Endif
+					
+					If seq=1 Then state=OVER
+					
+					seq -= 1
+					
+				Else
+
+					Local advance:int
+
+					If laught>0
+					
+						If laught=10 Then PlaySound(sndLaught,4)
+						If laught=20 Then PlaySound(sndLaught,4)
+						If laught=30 Then PlaySound(sndLaught,4)
+						laught -= 1
+						ps=0
+						
+					Else
+	
+						psy += 0.5'Gravedad
+									
+						Local xRep:float = Floor(Abs(psx))
+						Local yRep:float = Floor(Abs(psy))
+
+						If Abs(psx)-xRep >= 1 Then xRep += 1
+						If Abs(psy)-yRep >= 1 Then yRep += 1
+						
+						Local offsetX:float,offsetY:float
+						If psx<0 Then offsetX = 2 Else offsetX = 4
+						If psy<0 Then offsetY = 1 Else offsetY = 7
+								
+						While yRep>0
+							If PlaceFree(px+2,py+offsetY+Sgn(psy)) And PlaceFree(px+4,py+offsetY+Sgn(psy))
+								py += Sgn(psy)
+								pa = 2
+								pj = true
+							Else
+								psy = 0
+								pa = 0
+								pj = false
+							Endif
+							yRep -= 1	
+						wend
+		
+						While xRep>0
+							If PlaceFree(px+offsetX+Sgn(psx),py+1) And PlaceFree(px+offsetX+Sgn(psx),py+7)
+								px += Sgn(psx)
+								If pj=False Then pa = 1
+							Endif						
+							xRep -= 1
+						Wend
+								
+						'Controles del jugador
+						If KeyHit(KEY_X)				
+							If Not PlaceFree(px+2,py+8) Or Not PlaceFree(px+4,py+8)
+								PlaySound(sndJump,2)
+								psy = -4
+							endif
+						Endif
+
+						If KeyDown(KEY_LEFT)
+							psx = -1
+						Elseif KeyDown(KEY_RIGHT)
+							psx = 1
+						Else
+							psx=0
+						Endif
+
+					'Animaciones del jugadore
+					
+						Select pa
+						Case 0'idle
+							ps=1
+						Case 1'walk
+							ps += 1
+							If ps<2 Or ps>5 Then ps=2
+						Case 2'jump
+							If psx=1 Then ps = 7
+							If psx=-1 Then ps = 6
+							If psx=0 Then ps = 8
+						Case 3'die
+							ps += 0.5
+							If ps<8 Or ps>11 Then ps=8
+						end
+						
+						advance = (60*score/100)
+						'Print advance
+						If time >= 60-advance
+							
+							Local itm:=New ITEM
+							itm.x = 8+(Int(Rnd(limit,6-limit))*8)
+							itm.y = Int(Rnd(1,3))*8
+							itm.t = Rnd(0,7)
+							
+							For Local i:int=0 To 1
+								If itm.t>0 Then itm.t=Rnd(0,7) Else Exit
+							next
+	
+							AddAnimation(imgFlash,"",itm.x,itm.y)
+							AddAnimation(imgMake,"",32-4,32-13)
+							
+							itmA.AddLast(itm)
+							time = 0
+						Else
+							time += 1
+						Endif
+						
+						laught = 0
+												
+					endif
+				
+				'Actualiza los items
+		
+					For Local itm:=Eachin itmA
+							
+						AddEmitter(itm.x+4+Rnd(-1,1),itm.y+4+Rnd(-1,1),0,0,0,0,192,1,0.075)
+						
+						If itm.y<56
+							
+							itm.v += 0.05
+							itm.y += itm.v
+								
+							'Si colisiona con el jugador...
+							If rectRect(px+2,py+1,4,7,itm.x+2,itm.y+2,4,4)
+							
+								If itm.t=0
+									score += 1
+									AddAnimation(imgPick,"",itm.x,itm.y)
+									PlaySound(sndMoney,3)
+									itmA.RemoveEach(itm)
+								Else
+									PlaySound(sndDie,7)
+									ResetPlayer()
+									itmA.Clear()
+								endif
+				
+							Endif
+							
+						Else
+							AddAnimation(imgSplash,"",itm.x,53-level)
+							If itm.t=0 Then PlaySound(sndBad,5) Else PlaySound(sndLost,5)
+							If itm.t=0 Then level += 1
+							itmA.RemoveEach(itm)
+						endif
+			
+					Next
+	
+				'Actualiza las balas
+		
+					For Local bll:=Eachin bllA
+					
+						bll.x += bll.d
+						AddEmitter(bll.x+1+Rnd(-0.5,0.5),bll.y+1+Rnd(-0.5,0.5),0,0,0,192,0,1,0.075)
+							
+						If bll.x<0 Or bll.x>64 Then bllA.RemoveEach(bll)
+						
+						'Si colisiona con el jugador...
+						If rectRect(px+2,py+1,4,7,bll.x,bll.y,2,2)
+							ResetPlayer()
+							bllA.RemoveEach(bll)
+						Endif
+	
+					Next
+					
+				'Actualiza las torretas
+	
+					If tt>90
+						If ty[turret]<48 Then ty[turret] += 1 Else ty[turret]=48
+						If tt=140
+							PlaySound(sndShoot,6)
+							Local bll:=New BULLET
+							bll.x = tx[turret]+3
+							bll.y = ty[turret]+3
+							bll.d = 2-(turret*4)
+							bllA.AddLast(bll)
+							ts[turret]=1
+						Endif
+						If tt=160 Then tt=0
+					Else
+						If ty[turret]>3
+							ty[turret] -= 1
+						Else
+							ty[turret] = 3
+							ts[turret] = 0
+							turret = Rnd(0,2)
+						endif
+					Endif
+					tt += 1
+					
+					'Si faltan las tras partes del puente...
+					If limit=3 Or level=4
+						limit = 3
+						fader = 1
+						CheckScore()
+						seq = 30*3
+					Endif
+
+				Endif
+
+			Case OVER
+				
+				'Si hay una nueva puntuacion...
+				If ranking
+					EnterPlayer(sndSelect)
+				Else
+					If KeyHit(KEY_X)
+						score = 0
+						txt = ""
+						state = MENU
+					Endif
+				Endif
+
+			End
+
+		endif
+
+	'Actualiza las particulas
+	
+		UpdateParticles()
+		
+	'Actualiza las animaciones
+			
+		UpdateAnimations()
+		
+	'Actualiza el oscurecimiento de pantalla
+	
+		If fader>0.05 Then fader -= 0.05 Else fader=0
+		
+	End
+	
+    Method OnRender()
+		
+		Cls(0,0,0)
+	    Scale(8,8)
+	
+		'Actualiza el temblor de la pantalla
+		If shake>0
+			Translate(Rnd(-1,1),Rnd(-1,1))
+			shake -= 1
+		Endif
+
+		If state=0 Or state=2
+			DrawImage(imgBackground,0,-64+(0.01*Millisecs() Mod 64))
+			DrawImage(imgBackground,0,(0.01*Float(Millisecs()) Mod 64))
+		else
+			DrawImage(imgBackground,0,0)
+		endif
+			
+  		'Dibuja las particulas
+		DrawParticles()
+		
+		Select state
+		
+		Case MENU
+
+			For Local itm:=Eachin itmA
+				DrawImage(imgItems,itm.x,itm.y,(itm.t*2)+(0.005*Millisecs() Mod 2))
+			Next
+			
+			SetAlpha(0.5)
+			DrawImage(imgBoss,32,16,0.0,2,2,0)
+			SetAlpha(1.0)
+		
+			DrawImage(imgTitle,0,2)
+			Text("[TheMrCerebro]",32,58,0.5,0.5)
+			
+			SetAlpha(0.5+Cos(0.5 * Millisecs() Mod 360)*0.5)
+			Text("Press",32,26,0.5,0.5)
+			Text("-X-",32,26+7,0.5,0.5)
+			Text("to SURVIVE",32,26+7+7,0.5,0.5)
+
+		Case INGAME
+
+			If laught>0
+				If hide<250 Then hide += 10 Else hide=255
+			Else
+				If hide>60 Then hide -= 10 Else hide=60
+			Endif
+
+			SetColor(hide,hide,hide)
+			DrawImage(imgBoss,32-16,8,(laught/3) Mod 3)
+			If laught=0
+				SetColor(255,255,0)
+				Point(16+12+(px/24),8+18)
+				Point(16+17+(px/24),8+18)
+			Endif
+			
+			SetColor(128,128,128)
+			DrawImage(imgTube,8,48,0.01*Millisecs() Mod 4)
+			DrawImage(imgTube,48,48,0.01*Millisecs() Mod 4)
+			
+			SetColor(255,255,255)
+			DrawImage(imgPlayer,px,py,ps)
+			
+			'Dibuja el puente
+			For Local i:int=limit Until 6-limit
+				DrawImage(imgBridge,8+(i*8),56,i)
+			Next
+				
+			For Local itm:=Eachin itmA
+				DrawImage(imgItems,itm.x,itm.y,(itm.t*2)+(0.005*Millisecs() Mod 2))
+			Next
+			
+			SetColor(0,255,0)
+			For Local bll:=Eachin bllA
+				Rect(bll.x,bll.y,2,2)
+			Next
+			SetColor(255,255,255)
+
+			Text(score,32,2,0.5,0.5)
+			DrawImage(imgScore,0,0)
+			
+			For Local i:int=0 Until 2
+				DrawImage(imgTurret,tx[i],ty[i],ts[i]+i*2)
+			next
+				
+			'Dibuja el agua
+			For Local i:int=0 Until 8
+				DrawImage(imgWater,i*8,56-level,0.005*Millisecs() Mod 5)
+			Next
+
+		Case OVER
+
+			SetAlpha(0.5)
+			DrawImage(imgBoss,32,16,0.0,2,2,0)
+			
+			DrawScores(0,255,0,255,0,0)
+
+		end
+			
+		DrawAnimations()
+		
+		If fader>0
+			SetAlpha(fader)
+			SetColor(255,255,255)
+			Rect(0,0,64,64)
+		Endif
+		
+	End
+	
+	Method PlaceFree:Bool(x:float,y:float)
+		If x<8+(limit*8) Or x>54-(limit*8) Or y>55 Then Return False
+		Return True
+	End
+	
+	Method ResetPlayer:Void()
+		For Local itm:=Eachin itmA
+			AddAnimation(imgPick,"",itm.x,itm.y)
+			itmA.RemoveEach(itm)
+		Next
+		For Local bll:=Eachin bllA
+			AddAnimation(imgPick,"",bll.x,bll.y)
+			bllA.RemoveEach(bll)
+		next
+		AddAnimation(imgHologram,"",px,py)
+		
+		AddEmitter(px+4,py+4,0,0.1,255,255,255,8,0.025)
+		AddEmitter(px+4,py+4,0,0.1,0,255,255,4,0.025)
+		AddEmitter(px+4,py+4,0,0.1,0,192,192,2,0.025)
+		AddEmitter(px+4,py+4,0,0.1,0,0,255,2,0.025)
+		AddEmitter(px+4,py+4,0,0.1,0,0,192,2,0.025)
+		
+		shake = 30
+		limit += 1
+		If limit<3 Then laught=30
+		px = 28
+		psx = 0
+		psy = 0
+		py = 48
+		pj = false
+		tt = 0
+		ty[0] = 3
+		ts[0] = 0
+		ty[1] = 3
+		ts[1] = 0
+		
+		PlaySound(sndHit)
+	end
+
+Private
+
+	'Listas
+	Field itmA:=New List<ITEM>
+	Field bllA:=New List<BULLET>
+	
+	'Variables
+	Enumerate MENU, INGAME, OVER
+	Field state:int, shake:int, time:int, fader:float, limit:int
+	Field laught:float, hide:int, seq:int, level:int
+	Field px:float, py:float, psx:float, psy:float, ps:float, pj:bool, pa:int
+	Field tx:float[2], ty:float[2], ts:int[2], tt:int, turret:int
+
+	'Imagenes
+	Field imgPlayer:Image
+	Field imgItems:Image
+	Field imgWater:Image
+	Field imgBridge:Image
+	Field imgFlash:Image
+	Field imgPick:Image
+	Field imgSplash:Image
+	Field imgBackground:Image
+	Field imgBoss:Image
+	Field imgMake:Image
+	Field imgTitle:Image
+	Field imgTube:Image
+	Field imgScore:Image
+	Field imgHologram:Image
+	Field imgTurret:Image
+
+	'Sonidos
+	Field sndSelect:Sound
+	Field sndMoney:Sound
+	Field sndLost:Sound
+	Field sndHit:Sound
+	Field sndLaught:Sound
+	Field sndShoot:Sound
+	Field sndJump:Sound
+	Field sndDown:Sound
+	Field sndDie:Sound
+	Field sndBad:Sound
+	
+End
