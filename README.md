@@ -19,5 +19,5 @@ Is there a problem? Contact me if there is a problem or doubt.
 I appreciate the bug reports and comments.
 
 
-Greetings and thank you ;-)
+Greetings and thank you ;-)</br>
 Bye!!!
