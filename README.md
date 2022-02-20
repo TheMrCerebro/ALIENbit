@@ -24,7 +24,6 @@ Is there a problem?</br>
 Contact me if there is a problem or doubt.</br>
 I appreciate the bug reports and comments.</br>
 </br>
-<b>LINK: </b><a href="https://gamejolt.com/games/alienbit/458620">https://gamejolt.com/games/alienbit/458620</a></br>
 </br>
 Greetings and thank you ;-)</br>
 Bye!!!
