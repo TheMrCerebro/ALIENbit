@@ -40,6 +40,7 @@ Import inc.hscore
 Import inc.particles
 Import inc.animated
 Import inc.shapes
+Import inc.autofit
 
 Function Main()
 	New Game()
@@ -61,6 +62,7 @@ Class Game Extends App
 	'Constructor
 	Method OnCreate()
 
+		SetVirtualDisplay(64,64)
 		SetUpdateRate(30)
 		Seed = Millisecs()
 
@@ -108,6 +110,20 @@ Class Game Extends App
 
 	Method OnUpdate()
 
+		#If TARGET="glfw"
+		If KeyHit(KEY_ESCAPE) Then EndApp()
+		If KeyHit(KEY_F4)
+			fullscreen=Not fullscreen
+			If fullscreen
+				SetDeviceWindow(DesktopMode.Width,DesktopMode.Height,1)
+				HideMouse()
+			Else
+				SetDeviceWindow(512,512,4)
+				ShowMouse()
+			Endif
+		Endif
+		#Endif
+		
 		If fader=0
 		
 			Select state
@@ -417,8 +433,7 @@ Class Game Extends App
 	
     Method OnRender()
 		
-		Cls(0,0,0)
-	    Scale(8,8)
+	    UpdateVirtualDisplay()
 	
 		'Actualiza el temblor de la pantalla
 		If shake>0
@@ -572,6 +587,7 @@ Private
 	
 	'Variables
 	Enumerate MENU, INGAME, OVER
+	Field fullscreen?
 	Field state:int, shake:int, time:int, fader:float, limit:int
 	Field laught:float, hide:int, seq:int, level:int
 	Field px:float, py:float, psx:float, psy:float, ps:float, pj:bool, pa:int

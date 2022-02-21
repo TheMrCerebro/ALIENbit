@@ -91,7 +91,7 @@ Function DrawScores:Void(tr%,tg%,tb%,sr%,sg%,sb%)
 				SetColor(255,255,255)
 				SetAlpha(1.0)
 			Endif
-			DrawText(hsc.n+":"+hsc.v,32,17+(i*7),0.5,0.5)
+			Text(hsc.n+":"+hsc.v,32,17+(i*7),0.5,0.5)
 			i+=1
 		Next
 	
